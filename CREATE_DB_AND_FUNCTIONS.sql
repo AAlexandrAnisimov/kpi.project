@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS teachers(
 )
 
 INSERT INTO USERS VALUES (666,'Admin6666',
-							  'Admin6666',
+							  'c30db455c7a0bd7532830424cdacda8365818e6425995b07f186c9d6c6ced38a',
                               'alexanisandr@gmail.com',
                               'Oleksandr',
                               'Anisimov',

@@ -1,10 +1,15 @@
 import os
 import psycopg2
+import hashlib
 from flask import Flask, render_template, request, redirect, url_for, g, session, flash
 from config import Config
 
 server = Flask(__name__)
 server.config.from_object(Config)
+
+def to_sha(hash_string):
+    sha_signature = hashlib.sha256(hash_string.encode()).hexdigest()
+    return sha_signature
 
 def get_user_by_login(login):
     connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
@@ -117,6 +122,7 @@ def adduser():
 
     login = request.form['login']
     password = request.form['password']
+    sha_password = to_sha(password)
     email = request.form['email']
     fname = request.form['fname']
     lname = request.form['lname']
@@ -133,10 +139,10 @@ def adduser():
         fname == '' or 
         lname == ''):
         flash('Заповніть усі поля, позначені *!')
-    elif len(login) < 6:
-        flash('Логін занадто короткий (потрібно мінімум 6 символів)!')
-    elif len(password) < 6:
-        flash('Пароль занадто короткий (потрібно мінімум 6 символів)!')
+    elif len(login) < 8:
+        flash('Логін занадто короткий (потрібно мінімум 8 символів)!')
+    elif len(password) < 8:
+        flash('Пароль занадто короткий (потрібно мінімум 8 символів)!')
     else:
         users = get_user_by_login(login)
 
@@ -145,7 +151,7 @@ def adduser():
         else:
             cursor = connection.cursor()
             cursor.execute("INSERT INTO users (user_login, user_password, user_email, user_fname, user_lname, user_role ) VALUES (%s, %s, %s, %s, %s, %s)", 
-                          (login, password, email, fname, lname, role))
+                          (login, sha_password, email, fname, lname, role))
             
             users_after_insert = get_user_by_login(login)
 
