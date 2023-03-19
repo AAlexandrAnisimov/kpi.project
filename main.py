@@ -137,7 +137,10 @@ def before_request():
 
 @server.route('/')
 def index():
-    return redirect(url_for('admin'))
+    if g.user_login == None:
+        return redirect(url_for('login'))
+    else:
+        return render_template('index.html')   
         
 @server.route('/admin')
 def admin():
@@ -271,6 +274,29 @@ def updateuser(id):
     
     connection.close()
     return redirect(url_for('admin'))
+
+@server.route('/auth/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'GET':
+        return render_template('login.html')
+    elif request.method == 'POST':
+        session.pop('user_id', None)
+        session.pop('user_login', None)
+        session.pop('user_role', None)
+
+        login = request.form['login']
+        password = to_sha(request.form['password'])
+
+        users = get_user_by_login_and_password(login, password)
+
+        if users != []:
+            session['user_id'] = users[0]['id']
+            session['user_login'] = login
+            session['user_role'] = users[0]['role']
+            return redirect(url_for("index"))
+        
+        flash('Неправильний пароль чи логін')
+        return render_template('login.html')
 
 if __name__ == '__main__':
     server.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
