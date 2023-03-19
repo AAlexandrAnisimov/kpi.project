@@ -59,6 +59,31 @@ def get_user_by_id(id):
 
     return users
 
+def get_user_by_login_and_password(login, password):
+    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+    connection.autocommit = True
+
+    cursor = connection.cursor()
+    cursor.execute("""SELECT * FROM users WHERE users.user_login = %(u_login)s AND users.user_password = %(u_pass)s""",
+                    {'u_login': login, 'u_pass': password})
+    result = cursor.fetchall()
+    connection.close()
+
+    users = []
+    for uid, login, password, email, fname, lname, role in result:
+        user = {
+            "id": uid,
+            "login": login,
+            "password": password,
+            "email": email,
+            "fname": fname,
+            "lname": lname,
+            "role": role
+        }
+        users.append(user)
+
+    return users
+
 def get_student_by_id(id):
     connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
     connection.autocommit = True
@@ -99,13 +124,24 @@ def get_teacher_by_id(id):
 
     return teachers
 
+@server.before_request
+def before_request():
+    g.user_id = None
+    g.user_login = None
+    g.user_role = None
+
+    if ('user_id' in session) and ('user_role' in session) and ('user_login' in session):
+        g.user_id = session['user_id']
+        g.user_login = session['user_login']
+        g.user_role = session['user_role']
+
 @server.route('/')
 def index():
     return redirect(url_for('admin'))
         
 @server.route('/admin')
 def admin():
-    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI']) 
     connection.autocommit = True
 
     cursor = connection.cursor()
@@ -115,7 +151,7 @@ def admin():
 
     return render_template('admin.html', users = users_lst)
 
-@server.route('/adduser', methods=['POST'])
+@server.route('/admin/add', methods=['POST'])
 def adduser():
     connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
     connection.autocommit = True
@@ -167,8 +203,8 @@ def adduser():
     connection.close()
     return redirect(url_for('admin')) 
 
-@server.route('/delete/<string:id>', methods=['POST', 'GET'])
-def delete(id):
+@server.route('/admin/delete/<string:id>', methods=['POST', 'GET'])
+def deleteuser(id):
     connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
     connection.autocommit = True
 
@@ -189,8 +225,8 @@ def delete(id):
     connection.close()
     return redirect(url_for('admin'))
 
-@server.route('/edit/<id>', methods=['POST', 'GET'])
-def edit(id):
+@server.route('/user/edit/<id>', methods=['POST', 'GET'])
+def edituser(id):
     users_lst = get_user_by_id(id)
 
     students_lst = []
@@ -206,8 +242,8 @@ def edit(id):
     flash('Щось пішло не так...')
     return redirect(url_for('admin'))
     
-@server.route('/update/<id>', methods=['POST'])
-def update(id):
+@server.route('/user/update/<id>', methods=['POST'])
+def updateuser(id):
     fname = request.form['fname']
     lname = request.form['lname']
     email = request.form['email']
