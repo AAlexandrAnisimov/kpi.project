@@ -163,7 +163,50 @@ def index():
 
         return render_template('index.html', courses = courses_lst)
 
+@server.route('/course/add', methods=['GET', 'POST'])
+def addcourse():
+    if request.method == 'GET':
+        return render_template('add_course.html')
+    else:
+        title = request.form['title']
+        subtitle = request.form['subtitle']
+        content = request.form['content']
 
+        connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+        connection.autocommit = True
+
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO courses (fk_teacher_id, course_title, course_subtitle, course_content) VALUES (%s, %s, %s, %s)", 
+                      (g.user_id, title, subtitle, content))
+        connection.close()
+
+        return redirect(url_for("index"))
+
+@server.route('/course/<course_id>', methods=['GET'])
+def course(course_id):
+    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+    connection.autocommit = True
+
+    cursor = connection.cursor()
+    cursor.execute("""SELECT * FROM courses WHERE courses.course_id = %(c_id)s""",
+                   {'c_id': course_id})
+    result = cursor.fetchall()
+    connection.close()
+
+    courses_lst = []
+    for course_id, t_id, title, subtitle, content, day_posted in result:
+        user = get_user_by_id(t_id)[0]
+        course = {
+            "id": course_id,
+            "title": title,
+            "subtitle": subtitle,
+            "content": content,
+            "posted_by": user['login'],
+            "day_posted": day_posted
+        }
+        courses_lst.append(course)
+
+    return render_template('course.html', courses = courses_lst)
 
 @server.route('/admin')
 def admin():
