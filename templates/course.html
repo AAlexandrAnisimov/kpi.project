@@ -11,7 +11,7 @@
             <div class="post-heading">
               <h1>{{ course['title'] }}</h1>
               <h2 class="subheading">{{ course['subtitle'] }}</h2>
-              <span class="meta">Posted by course['posted_by']
+              <span class="meta">Posted by {{ course['posted_by'] }}
                 on {{ course['day_posted'].strftime('%B %d, %Y') }} </span>
             </div>
           </div>
