@@ -124,6 +124,28 @@ def get_teacher_by_id(id):
 
     return teachers
 
+def get_course_by_id(id):
+    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+    connection.autocommit = True
+
+    cursor = connection.cursor()
+    cursor.execute('SELECT * FROM courses WHERE course_id = {0}'.format(id))
+    result = cursor.fetchall()
+    connection.close()
+
+    courses = []
+    for course_id, t_id, title, subtitle, content, day_posted in result:
+        course = {
+            "id": course_id,
+            "title": title,
+            "subtitle": subtitle,
+            "content": content,
+            "day_posted": day_posted
+        }
+        courses.append(course)
+
+    return courses
+
 @server.before_request
 def before_request():
     g.user_id = None
@@ -166,7 +188,7 @@ def index():
 @server.route('/course/add', methods=['GET', 'POST'])
 def addcourse():
     if request.method == 'GET' and g.user_role == 'teacher':
-        return render_template('add_course.html')
+        return render_template('courses/add_course.html')
     elif request.method == 'POST' and g.user_role == 'teacher':
         title = request.form['title']
         subtitle = request.form['subtitle']
@@ -208,7 +230,59 @@ def course(course_id):
         }
         courses_lst.append(course)
 
-    return render_template('course.html', courses = courses_lst)
+    return render_template('courses/course.html', courses = courses_lst)
+
+@server.route('/course/edit/<course_id>', methods=['GET', 'POST'])
+def editcourse(course_id):
+    if request.method == 'GET' and g.user_role == 'teacher':
+        courses_lst = get_course_by_id(course_id)
+        return render_template('courses/edit_course.html', courses = courses_lst)
+    elif request.method == 'POST' and g.user_role == 'teacher':
+        title = request.form['title']
+        subtitle = request.form['subtitle']
+        content = request.form['content']
+
+        connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+        connection.autocommit = True
+
+        cursor = connection.cursor()
+        cursor.execute("""UPDATE courses SET course_title = %s, course_subtitle = %s, course_content = %s WHERE course_id = %s""",
+                      (title, subtitle, content, course_id))
+        connection.close()
+
+        return redirect(url_for("index"))
+    else:
+        return redirect(url_for("index"))
+
+@server.route('/course/delete/<course_id>', methods=['GET', 'POST'])
+def deletecourse(course_id):
+    if g.user_role == 'teacher':
+        connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+        connection.autocommit = True
+        cursor = connection.cursor()
+
+        cursor.execute('DELETE FROM courses WHERE course_id = {0}'.format(course_id))
+        connection.close()
+
+    return redirect(url_for('profile'))
+
+@server.route('/profile')
+def profile():
+    if g.user_role == 'teacher':
+        connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI']) 
+        connection.autocommit = True
+
+        cursor = connection.cursor()
+        cursor.execute('SELECT * FROM courses WHERE fk_teacher_id = {0}'.format(g.user_id))
+        courses_lst = cursor.fetchall()
+        connection.close()
+
+        user = get_user_by_id(g.user_id)
+        teacher = get_teacher_by_id(g.user_id)
+
+        return render_template('users/profile.html', courses = courses_lst, users = user, teachers = teacher)
+    else:
+        redirect(url_for("index"))
 
 @server.route('/admin')
 def admin():
@@ -222,7 +296,7 @@ def admin():
         users_lst = cursor.fetchall()
         connection.close()
 
-        return render_template('admin.html', users = users_lst)
+        return render_template('users/admin.html', users = users_lst)
     else:
         redirect(url_for("index"))
 
@@ -280,24 +354,26 @@ def adduser():
 
 @server.route('/admin/delete/<string:id>', methods=['POST', 'GET'])
 def deleteuser(id):
-    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
-    connection.autocommit = True
-
     user = get_user_by_id(id)[0]
+
     if user['role'] == 'admin':
         flash('Адміністратора не може бути видалено')
     else:
+        connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+        connection.autocommit = True
         cursor = connection.cursor()
-        cursor.execute('DELETE FROM users WHERE user_id = {0}'.format(id))
 
-        if user['role'] == 'student':
-            cursor.execute('DELETE FROM students WHERE student_id = {0}'.format(id))
-        elif user['role'] == 'teacher':
+        if user['role'] == 'teacher':
+            cursor.execute('DELETE FROM courses WHERE fk_teacher_id = {0}'.format(id))
             cursor.execute('DELETE FROM teachers WHERE teacher_id = {0}'.format(id))
+        elif user['role'] == 'student':
+            cursor.execute('DELETE FROM students WHERE student_id = {0}'.format(id))
+
+        cursor.execute('DELETE FROM users WHERE user_id = {0}'.format(id))
+        connection.close()
 
         flash('Користувача успішно видалено')
     
-    connection.close()
     return redirect(url_for('admin'))
 
 @server.route('/user/edit/<id>', methods=['POST', 'GET'])
@@ -309,10 +385,10 @@ def edituser(id):
 
     if users_lst[0]['role'] == 'student':
         students_lst = get_student_by_id(id)
-        return render_template('edit_student.html', users = users_lst, students = students_lst)
+        return render_template('users/edit_user.html', users = users_lst, students = students_lst)
     if users_lst[0]['role'] == 'teacher':
         teachers_lst = get_teacher_by_id(id)
-        return render_template('edit_teacher.html', users = users_lst, teachers = teachers_lst)
+        return render_template('users/edit_user.html', users = users_lst, teachers = teachers_lst)
     
     flash('Щось пішло не так...')
     return redirect(url_for('admin'))
