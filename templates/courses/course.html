@@ -19,17 +19,109 @@
       </div>
     </header>
 
-    <!-- Post Content -->
     <article>
       <div class="container">
         <div class="row">
           <div class="col-lg-8 col-md-10 mx-auto">
-            {{ course['content']|safe }}
+            <span>{{ course['content']|safe }}</span>
           </div>
         </div>
       </div>
     </article>
 
     <hr>
+
+    <section style="background-color: #e7effd;">
+      <div class="container my-5 py-5 text-dark">
+        <div class="row d-flex justify-content-center">
+          <div class="col-md-11 col-lg-9 col-xl-7">
+            {% for review in reviews %}
+            <div class="d-flex flex-start mb-4">
+              <img class="rounded-circle shadow-1-strong me-3"
+                src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/img%20(21).webp" alt="avatar" width="65"
+                height="65" />
+              <div class="card w-100">
+                <div class="card-body p-4">
+                  <div class="">
+                    <h5>{{ review['posted_by'] }}</h5>
+                    <p class="small">{{ review['day_posted'].strftime('%B %d, %Y') }}</p>
+                    <p class="post-subtitle">
+                      <b>Переваги:</b> {{ review['pros'] }}
+                    </p>
+                    <p class="post-subtitle">
+                      <b>Недоліки:</b> {{ review['cons'] }}
+                    </p>
+                    <p class="post-subtitle">
+                      <b>Коментар:</b> {{ review['comment'] }}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-right">
+                      <div>
+                        <p>
+                          Цей відгук був корисним? <a href="#!" class="link-muted">Так</a><a href="#!" class="link-muted">Ні</a>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {% if g.user_role == 'student' %}
+    <div class="container">
+      <div class="card bg-light">
+      <article class="card-body mx-auto" style="max-width: 600px;">
+          <br><br>
+          <h4 class="card-title mt-3 text-center">Додати відгук до курсу</h4>
+          <br>
+          <form action="{{ url_for('addreview') }}" name="addForm" id="addForm" method="POST" class="needs-validation" novalidate>
+              <div class="rating">
+                <input type="radio" name="rating" value="5" id="5">
+                <label for="5">☆</label>
+                <input type="radio" name="rating" value="4" id="4">
+                <label for="4">☆</label>
+                <input type="radio" name="rating" value="3" id="3">
+                <label for="3">☆</label>
+                <input type="radio" name="rating" value="2" id="2">
+                <label for="2">☆</label>
+                <input type="radio" name="rating" value="1" id="1">
+                <label for="1">☆</label>
+                <h6>Оцінка:</h6>
+              </div>
+              <div class="control-group">
+                  <div class="form-group floating-label-form-group controls">
+                    <label>Переваги</label>
+                    <input type="text" class="form-control" placeholder="Переваги" name="pros" id="pros">
+                  </div>
+              </div>
+              <div class="control-group">
+                  <div class="form-group floating-label-form-group controls">
+                    <label>Недоліки</label>
+                    <input type="text" class="form-control" placeholder="Недоліки" name="cons" id="cons">
+                  </div>
+              </div>
+              <div class="control-group">
+                <div class="form-group floating-label-form-group controls">
+                  <label>Коментар</label>
+                  <textarea rows="5" class="form-control" placeholder="Коментар" name="comment" id="comment"></textarea>
+                </div>
+              </div>
+              <div class="control-group" style="display: none;">
+                  <input type="text" class="form-control" name="course_id" id="course_id" value="{{ course['id'] }}">
+              </div>
+              <br>
+              <div id="success"></div>
+              <div class="form-group" id="submit_button">
+                <button type="submit" class="btn btn-primary btn-block">Додати</button>
+              </div>
+          </form>
+      </article>
+      </div>
+    </div>
+    {% endif %}
   {% endfor %} 
 {% endblock %}

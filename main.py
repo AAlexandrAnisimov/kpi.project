@@ -230,7 +230,30 @@ def course(course_id):
         }
         courses_lst.append(course)
 
-    return render_template('courses/course.html', courses = courses_lst)
+    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+    connection.autocommit = True
+
+    cursor = connection.cursor()
+    cursor.execute("""SELECT * FROM reviews WHERE reviews.fk_course_id = %(c_id)s""",
+                   {'c_id': course_id})
+    result2 = cursor.fetchall()
+    connection.close()
+
+    reviews_lst = []
+    for review_id, s_id, c_id, score, pros, cons, comment, day_posted in result2:
+        user = get_user_by_id(s_id)[0]
+        review = {
+            "id": review_id,
+            "score": score,
+            "pros": pros,
+            "cons": cons,
+            "comment": comment,
+            "posted_by": user['login'],
+            "day_posted": day_posted
+        }
+        reviews_lst.append(review)
+
+    return render_template('courses/course.html', courses = courses_lst, reviews = reviews_lst)
 
 @server.route('/course/edit/<course_id>', methods=['GET', 'POST'])
 def editcourse(course_id):
@@ -265,6 +288,24 @@ def deletecourse(course_id):
         connection.close()
 
     return redirect(url_for('profile'))
+
+@server.route('/review/add', methods=['POST'])
+def addreview():
+    score = request.form['rating']
+    pros = request.form['pros']
+    cons = request.form['cons']
+    comment = request.form['comment']
+    course_id = request.form['course_id']
+
+    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+    connection.autocommit = True
+
+    cursor = connection.cursor()
+    cursor.execute("INSERT INTO reviews (fk_student_id, fk_course_id, review_score, review_pros, review_cons, review_comment) VALUES (%s, %s, %s, %s, %s, %s)", 
+                    (g.user_id, course_id, score, pros, cons, comment))
+    connection.close()
+
+    return redirect(url_for('course', course_id = course_id))
 
 @server.route('/profile')
 def profile():
