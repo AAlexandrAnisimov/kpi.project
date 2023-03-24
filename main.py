@@ -218,13 +218,20 @@ def addcourse():
         subtitle = request.form['subtitle']
         content = request.form['content']
 
-        connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
-        connection.autocommit = True
+        if title == '':
+            flash('Пустий заголовок')
+        elif len(title) > 20:
+            flash('Занадто довгий заголовок')
+        elif len(subtitle) > 20:
+            flash('Занадто довгий підзаголовок')
+        else:
+            connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+            connection.autocommit = True
 
-        cursor = connection.cursor()
-        cursor.execute("INSERT INTO courses (fk_teacher_id, course_title, course_subtitle, course_content) VALUES (%s, %s, %s, %s)", 
-                      (g.user_id, title, subtitle, content))
-        connection.close()
+            cursor = connection.cursor()
+            cursor.execute("INSERT INTO courses (fk_teacher_id, course_title, course_subtitle, course_content) VALUES (%s, %s, %s, %s)", 
+                        (g.user_id, title, subtitle, content))
+            connection.close()
 
         return redirect(url_for("index"))
     else:
@@ -316,7 +323,7 @@ def deletecourse(course_id):
         connection.autocommit = True
         cursor = connection.cursor()
 
-        cursor.execute('DELETE FROM revies WHERE fk_course_id = {0}'.format(course_id))
+        cursor.execute('DELETE FROM reviews WHERE fk_course_id = {0}'.format(course_id))
         cursor.execute('DELETE FROM courses WHERE course_id = {0}'.format(course_id))
         connection.close()
 
