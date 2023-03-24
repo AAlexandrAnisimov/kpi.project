@@ -35,6 +35,30 @@ def get_user_by_login(login):
 
     return users
 
+def get_user_by_email(email):
+    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+    connection.autocommit = True
+
+    cursor = connection.cursor()
+    cursor.execute("""SELECT * FROM users WHERE users.user_email = %(u_login)s""", {'u_email': email})
+    result = cursor.fetchall()
+    connection.close()
+
+    users = []
+    for uid, login, password, email, fname, lname, role in result:
+        user = {
+            "id": uid,
+            "login": login,
+            "password": password,
+            "email": email,
+            "fname": fname,
+            "lname": lname,
+            "role": role
+        }
+        users.append(user)
+
+    return users
+
 def get_user_by_id(id):
     connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
     connection.autocommit = True
@@ -370,10 +394,13 @@ def adduser():
     elif len(password) < 8:
         flash('Пароль занадто короткий (потрібно мінімум 8 символів)!')
     else:
-        users = get_user_by_login(login)
+        users_by_login = get_user_by_login(login)
+        users_by_email = get_user_by_email(email)
 
-        if users != []:
+        if users_by_login != []:
             flash('Користувача з таким логіном вже зареєстровано')
+        elif users_by_email != []:
+            flash('Користувача з таким email-ом вже зареєстровано')
         else:
             cursor = connection.cursor()
             cursor.execute("INSERT INTO users (user_login, user_password, user_email, user_fname, user_lname, user_role ) VALUES (%s, %s, %s, %s, %s, %s)", 
@@ -405,8 +432,7 @@ def deleteuser(id):
         cursor = connection.cursor()
 
         if user['role'] == 'teacher':
-            cursor.execute('DELETE FROM courses WHERE fk_teacher_id = {0}'.format(id))
-            cursor.execute('DELETE FROM teachers WHERE teacher_id = {0}'.format(id))
+            flash('Викладача не може бути видалено')
         elif user['role'] == 'student':
             cursor.execute('DELETE FROM students WHERE student_id = {0}'.format(id))
 
