@@ -46,6 +46,9 @@
                     <h5>{{ review['posted_by'] }}</h5>
                     <p class="small">{{ review['day_posted'].strftime('%B %d, %Y') }}</p>
                     <p class="post-subtitle">
+                      <b>Оцінка:</b> {{ review['score'] }} бал/и з 5
+                    </p>
+                    <p class="post-subtitle">
                       <b>Переваги:</b> {{ review['pros'] }}
                     </p>
                     <p class="post-subtitle">
@@ -54,13 +57,6 @@
                     <p class="post-subtitle">
                       <b>Коментар:</b> {{ review['comment'] }}
                     </p>
-                    <div class="d-flex justify-content-between align-items-right">
-                      <div>
-                        <p>
-                          Цей відгук був корисним? <a href="#!" class="link-muted">Так</a><a href="#!" class="link-muted">Ні</a>
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -80,7 +76,7 @@
           <br>
           <form action="{{ url_for('addreview') }}" name="addForm" id="addForm" method="POST" class="needs-validation" novalidate>
               <div class="rating">
-                <input type="radio" name="rating" value="5" id="5">
+                <input type="radio" name="rating" value="5" id="5" checked="checked">
                 <label for="5">☆</label>
                 <input type="radio" name="rating" value="4" id="4">
                 <label for="4">☆</label>

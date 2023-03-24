@@ -292,9 +292,9 @@ def editcourse(course_id):
 
         if title == '':
             flash('Пустий заголовок')
-        elif len(title) > 50:
+        elif len(title) > 20:
             flash('Занадто довгий заголовок')
-        elif len(subtitle) > 50:
+        elif len(subtitle) > 20:
             flash('Занадто довгий підзаголовок')
         else:
             connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
@@ -316,6 +316,7 @@ def deletecourse(course_id):
         connection.autocommit = True
         cursor = connection.cursor()
 
+        cursor.execute('DELETE FROM revies WHERE fk_course_id = {0}'.format(course_id))
         cursor.execute('DELETE FROM courses WHERE course_id = {0}'.format(course_id))
         connection.close()
 
@@ -329,13 +330,16 @@ def addreview():
     comment = request.form['comment']
     course_id = request.form['course_id']
 
-    connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
-    connection.autocommit = True
+    if pros == '' or cons == '':
+        flash('Зповніть поля "Недоліки" та "Переваги"')
+    else:
+        connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+        connection.autocommit = True
 
-    cursor = connection.cursor()
-    cursor.execute("INSERT INTO reviews (fk_student_id, fk_course_id, review_score, review_pros, review_cons, review_comment) VALUES (%s, %s, %s, %s, %s, %s)", 
-                    (g.user_id, course_id, score, pros, cons, comment))
-    connection.close()
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO reviews (fk_student_id, fk_course_id, review_score, review_pros, review_cons, review_comment) VALUES (%s, %s, %s, %s, %s, %s)", 
+                        (g.user_id, course_id, score, pros, cons, comment))
+        connection.close()
 
     return redirect(url_for('course', course_id = course_id))
 
