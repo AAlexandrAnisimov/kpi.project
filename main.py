@@ -434,12 +434,12 @@ def deleteuser(id):
         if user['role'] == 'teacher':
             flash('Викладача не може бути видалено')
         elif user['role'] == 'student':
+            cursor.execute('DELETE FROM reviews WHERE fk_student_id = {0}'.format(id))
             cursor.execute('DELETE FROM students WHERE student_id = {0}'.format(id))
+            cursor.execute('DELETE FROM users WHERE user_id = {0}'.format(id))
+            flash('Користувача успішно видалено')
 
-        cursor.execute('DELETE FROM users WHERE user_id = {0}'.format(id))
         connection.close()
-
-        flash('Користувача успішно видалено')
     
     return redirect(url_for('admin'))
 
