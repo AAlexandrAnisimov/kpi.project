@@ -40,7 +40,7 @@ def get_user_by_email(email):
     connection.autocommit = True
 
     cursor = connection.cursor()
-    cursor.execute("""SELECT * FROM users WHERE users.user_email = %(u_login)s""", {'u_email': email})
+    cursor.execute("""SELECT * FROM users WHERE users.user_email = %(u_email)s""", {'u_email': email})
     result = cursor.fetchall()
     connection.close()
 
