@@ -289,13 +289,21 @@ def editcourse(course_id):
         subtitle = request.form['subtitle']
         content = request.form['content']
 
-        connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
-        connection.autocommit = True
 
-        cursor = connection.cursor()
-        cursor.execute("""UPDATE courses SET course_title = %s, course_subtitle = %s, course_content = %s WHERE course_id = %s""",
-                      (title, subtitle, content, course_id))
-        connection.close()
+        if title == '':
+            flash('Пустий заголовок')
+        elif len(title) > 50:
+            flash('Занадто довгий заголовок')
+        elif len(subtitle) > 50:
+            flash('Занадто довгий підзаголовок')
+        else:
+            connection = psycopg2.connect(server.config['SQLALCHEMY_DATABASE_URI'])
+            connection.autocommit = True
+
+            cursor = connection.cursor()
+            cursor.execute("""UPDATE courses SET course_title = %s, course_subtitle = %s, course_content = %s WHERE course_id = %s""",
+                        (title, subtitle, content, course_id))
+            connection.close()
 
         return redirect(url_for("index"))
     else:
